@@ -1,0 +1,8 @@
+{
+  "name": "pospec.enviroment-settings",
+  "version": "1.0.0",
+  "displayName": "Enviroment Settings",
+  "dependencies": {
+    "com.unity.textmeshpro": ""
+  }
+}
