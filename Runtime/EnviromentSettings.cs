@@ -23,6 +23,14 @@ namespace Pospec.EnviromentSettings
         [SerializeField] private Toggle postProcToggle;
         [SerializeField] private Slider brightnessSlider;
 
+        public event Action<float> onMusicChanged;
+        public event Action<float> onSoundChanged;
+        public event Action<DetailLevel> onResolutionChanged;
+        public event Action<bool> onFullScreenChanged;
+        public event Action<bool> onPostProcChanged;
+        public event Action<float> onBrightnessChanged;
+        public event Action onChanged;
+
         public string saveDir => Path.Combine(Application.dataPath, "Save");
         public string savePath => Path.Combine(saveDir, "EnviromentSettings.json");
         public static SettingsData Data { get; set; }
@@ -50,7 +58,7 @@ namespace Pospec.EnviromentSettings
 
         #region Setup
 
-        private void Start()
+        private void Awake()
         {
             Data = LoadData();
 
@@ -79,6 +87,11 @@ namespace Pospec.EnviromentSettings
             {
                 return new SettingsData();
             }
+        }
+
+        private void SaveData()
+        {
+            SaveData(Data);
         }
 
         private void SaveData(SettingsData data)
@@ -208,14 +221,16 @@ namespace Pospec.EnviromentSettings
         {
             musicMixer?.SetFloat("Volume", SliderToMixer(volume));
             Data.MusicVolume = volume;
-            SaveData(Data);
+            onMusicChanged?.Invoke(volume);
+            ValueChanged();
         }
 
         public void SetSoundVolume(float volume)
         {
             soundMixer?.SetFloat("Volume", SliderToMixer(volume));
             Data.SoundVolume = volume;
-            SaveData(Data);
+            onSoundChanged?.Invoke(volume);
+            ValueChanged();
         }
 
         private static float SliderToMixer(float sliderVal) => Mathf.Log10(sliderVal) * 20;
@@ -234,26 +249,31 @@ namespace Pospec.EnviromentSettings
             Resolution current = GetResolution(detailLevel);
             Screen.SetResolution(current.width, current.height, Screen.fullScreen);
             Data.ResolutionLevel = (DetailLevel)detailLevel;
-            SaveData(Data);
+            onResolutionChanged?.Invoke((DetailLevel)detailLevel);
+            ValueChanged();
         }
 
         public void SetFullScreen(bool fullScreen)
         {
             Screen.fullScreen = fullScreen;
             Data.FullScreen = fullScreen;
-            SaveData(Data);
+            onFullScreenChanged?.Invoke(fullScreen);
+            ValueChanged();
         }
 
-        public void SetPostProcessing(bool isOn)
+        public void SetPostProcessing(bool postProc)
         {
-            Data.PostProcessing = isOn;
-            SaveData(Data);
+            Data.PostProcessing = postProc;
+            onPostProcChanged?.Invoke(postProc);
+            ValueChanged();
         }
 
         private void SetBrightness(float brightness)
         {
             brightness = Mathf.Clamp01(brightness);
             Screen.brightness = brightness;
+            onBrightnessChanged?.Invoke(brightness);
+            ValueChanged();
         }
 
         public static Resolution GetResolution(DetailLevel detail)
@@ -268,5 +288,11 @@ namespace Pospec.EnviromentSettings
         }
 
         #endregion
+
+        private void ValueChanged()
+        {
+            SaveData();
+            onChanged?.Invoke();
+        }
     }
 }
