@@ -31,25 +31,31 @@ namespace Pospec.EnviromentSettings
         public event Action<float> onBrightnessChanged;
         public event Action onChanged;
 
-        public string saveDir => Path.Combine(Application.dataPath, "Save");
-        public string savePath => Path.Combine(saveDir, "EnviromentSettings.json");
+        public string savePath => Path.Combine(Application.persistentDataPath, "EnviromentSettings.json");
         public static SettingsData Data { get; set; }
 
         private static List<Resolution> _resolutions;
-        private static List<Resolution> Resolutions
+        public static List<Resolution> Resolutions
         {
             get
             {
-                if(_resolutions == null)
+                if (_resolutions == null)
                 {
-                    Resolution[] allRes = Screen.resolutions;
-                    AspectRatio ratio = new AspectRatio(allRes[allRes.Length - 1]);
                     _resolutions = new List<Resolution>();
-
-                    for (int i = allRes.Length - 1; i >= 0; i--)
+                    try
                     {
-                        if (ratio.CorrespondsTo(allRes[i]))
-                            _resolutions.Add(allRes[i]);
+                        Resolution[] allRes = Screen.resolutions;
+                        AspectRatio ratio = new AspectRatio(allRes[allRes.Length - 1]);
+
+                        for (int i = allRes.Length - 1; i >= 0; i--)
+                        {
+                            if (ratio.CorrespondsTo(allRes[i]))
+                                _resolutions.Add(allRes[i]);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError("Error while setting native resolutions: " + ex.Message);
                     }
                 }
                 return _resolutions;
@@ -61,7 +67,11 @@ namespace Pospec.EnviromentSettings
         private void Awake()
         {
             Data = LoadData();
+        }
 
+        private void Start()
+        {
+            SetupResolutionDropdown();
             SetMusicVolume(Data.MusicVolume);
             SetSoundVolume(Data.SoundVolume);
             SetResolution(Data.ResolutionLevel);
@@ -73,13 +83,13 @@ namespace Pospec.EnviromentSettings
 
         private SettingsData LoadData()
         {
-            if(!File.Exists(savePath))
-            {
-                return new SettingsData();
-            }
-
             try
             {
+                if (!File.Exists(savePath))
+                {
+                    return new SettingsData();
+                }
+
                 string json = File.ReadAllText(savePath);
                 return JsonUtility.FromJson<SettingsData>(json);
             }
@@ -96,11 +106,15 @@ namespace Pospec.EnviromentSettings
 
         private void SaveData(SettingsData data)
         {
-            if(!Directory.Exists(saveDir))
-                Directory.CreateDirectory(saveDir);
-            
-            string json = JsonUtility.ToJson(data);
-            File.WriteAllText(savePath, json);
+            try
+            {
+                string json = JsonUtility.ToJson(data);
+                File.WriteAllText(savePath, json);
+            }
+            catch(Exception ex)
+            {
+                Debug.LogError("Error while saving settings data: " + ex.Message);
+            }
         }
 
         private void SetupUI()
@@ -157,17 +171,7 @@ namespace Pospec.EnviromentSettings
 
             if (resolutionsDropdown != null)
             {
-                resolutionsDropdown.ClearOptions();
-
-                List<string> resText = new List<string>();
-                foreach (DetailLevel detail in Enum.GetValues(typeof(DetailLevel)))
-                {
-                    Resolution res = GetResolution(detail);
-                    resText.Add(string.Format("{0} ({1} x {2})", detail.ToString(), res.width, res.height));
-                }
-
-                resolutionsDropdown.AddOptions(resText);
-                resolutionsDropdown.RefreshShownValue();
+                SetupResolutionDropdown();
                 resolutionsDropdown.interactable = true;
             }
 
@@ -183,6 +187,29 @@ namespace Pospec.EnviromentSettings
                 brightnessSlider.wholeNumbers = false;
                 brightnessSlider.interactable = true;
             }
+        }
+
+        private void SetupResolutionDropdown()
+        {
+            if (resolutionsDropdown == null)
+                return;
+
+            resolutionsDropdown.ClearOptions();
+            if (Resolutions.Count == 0)
+            {
+                resolutionsDropdown.RefreshShownValue();
+                return;
+            }
+
+            List<string> resText = new List<string>();
+            foreach (DetailLevel detail in Enum.GetValues(typeof(DetailLevel)))
+            {
+                Resolution res = GetResolution(detail);
+                resText.Add(string.Format("{0} ({1} x {2})", detail.ToString(), res.width, res.height));
+            }
+
+            resolutionsDropdown.AddOptions(resText);
+            resolutionsDropdown.RefreshShownValue();
         }
 
         private void OnDestroy()
@@ -246,6 +273,9 @@ namespace Pospec.EnviromentSettings
 
         private void SetResolution(int detailLevel)
         {
+            if (Resolutions.Count == 0)
+                return;
+
             Resolution current = GetResolution(detailLevel);
             Screen.SetResolution(current.width, current.height, Screen.fullScreen);
             Data.ResolutionLevel = (DetailLevel)detailLevel;
@@ -283,6 +313,9 @@ namespace Pospec.EnviromentSettings
 
         public static Resolution GetResolution(int detail)
         {
+            if (Resolutions.Count == 0)
+                return Screen.currentResolution;
+
             int i = detail * (Resolutions.Count - 1) / (int)DetailLevel.Low;
             return Resolutions[i];
         }
