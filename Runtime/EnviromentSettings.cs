@@ -31,8 +31,18 @@ namespace Pospec.EnviromentSettings
         public event Action<float> onBrightnessChanged;
         public event Action onChanged;
 
-        public string savePath => Path.Combine(Application.persistentDataPath, "EnviromentSettings.json");
-        public static SettingsData Data { get; set; }
+        public static string savePath => Path.Combine(Application.persistentDataPath, "EnviromentSettings.json");
+
+        private static SettingsData _data;
+        public static SettingsData Data
+        {
+            get
+            {
+                if(_data == null)
+                    _data = LoadData();
+                return _data;
+            }
+        }
 
         private static List<Resolution> _resolutions;
         public static List<Resolution> Resolutions
@@ -64,11 +74,6 @@ namespace Pospec.EnviromentSettings
 
         #region Setup
 
-        private void Awake()
-        {
-            Data = LoadData();
-        }
-
         private void Start()
         {
             SetupResolutionDropdown();
@@ -81,7 +86,7 @@ namespace Pospec.EnviromentSettings
             SetupUI();
         }
 
-        private SettingsData LoadData()
+        private static SettingsData LoadData()
         {
             try
             {
