@@ -28,6 +28,11 @@ namespace Pospec.EnviromentSettings
             return Width / (float)Height;
         }
 
+        public override string ToString()
+        {
+            return Width.ToString() + " x " + Height.ToString();
+        }
+
         private static uint GCD(uint a, uint b)
         {
             while (a != 0 && b != 0)

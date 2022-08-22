@@ -12,14 +12,7 @@ namespace Pospec.EnviromentSettings
         public bool FullScreen;
         public bool PostProcessing;
 
-        public SettingsData()
-        {
-            MusicVolume = 1;
-            SoundVolume = 1;
-            ResolutionLevel = DetailLevel.Max;
-            FullScreen = Screen.fullScreen;
-            PostProcessing = true;
-        }
+        public SettingsData() : this(1, 1, DetailLevel.Max, Screen.fullScreen, true) { }
 
         public SettingsData(float musicVolume, float soundVolume, DetailLevel resolutionLevel, bool fullScreen, bool postProcessing)
         {
