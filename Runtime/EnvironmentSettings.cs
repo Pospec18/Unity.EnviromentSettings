@@ -6,14 +6,15 @@ using UnityEngine.UI;
 using UnityEngine.Audio;
 using TMPro;
 
-namespace Pospec.EnviromentSettings
+namespace Pospec.EnvironmentSettings
 {
-    public class EnviromentSettings : MonoBehaviour
+    public class EnvironmentSettings : MonoBehaviour
     {
         [Header("Audio")]
-        [SerializeField] private AudioMixer musicMixer;
-        [SerializeField] private AudioMixer soundMixer;
+        [SerializeField, Tooltip("Expose parameters '" + masterVolumeName + "' , '" + musicVolumeName + "' and '" + soundVolumeName + "' on AudioMixer volume tabs")]
+        private AudioMixer audioMixer;
 
+        [SerializeField] private Slider masterSlider;
         [SerializeField] private Slider musicSlider;
         [SerializeField] private Slider soundSlider;
 
@@ -22,9 +23,9 @@ namespace Pospec.EnviromentSettings
         [SerializeField] private Toggle fullScreenToggle;
         [SerializeField] private Toggle postProcToggle;
         [SerializeField] private Slider brightnessSlider;
-        [SerializeField] private List<DeviceType> ignoreResolutionsDevices;
         [SerializeField] private List<RuntimePlatform> ignoreResolutionsPlatforms;
 
+        public event Action<float> onMasterChanged;
         public event Action<float> onMusicChanged;
         public event Action<float> onSoundChanged;
         public event Action<DetailLevel> onResolutionChanged;
@@ -33,7 +34,11 @@ namespace Pospec.EnviromentSettings
         public event Action<float> onBrightnessChanged;
         public event Action onChanged;
 
-        public static string savePath => Path.Combine(Application.persistentDataPath, "EnviromentSettings.json");
+        private const string masterVolumeName = "MasterVolume";
+        private const string musicVolumeName = "MusicVolume";
+        private const string soundVolumeName = "SoundVolume";
+
+        public static string savePath => Path.Combine(Application.persistentDataPath, "EnvironmentSettings.json");
 
         private static SettingsData _data;
         public static SettingsData Data
@@ -80,6 +85,7 @@ namespace Pospec.EnviromentSettings
         {
             try
             {
+                SetMasterVolume(Data.MasterVolume);
                 SetMusicVolume(Data.MusicVolume);
                 SetSoundVolume(Data.SoundVolume);
                 SetPostProcessing(Data.PostProcessing);
@@ -133,6 +139,11 @@ namespace Pospec.EnviromentSettings
 
         private void SetupUI()
         {
+            if(masterSlider != null)
+            {
+                masterSlider.onValueChanged.AddListener(SetMasterVolume);
+                masterSlider.value = Data.MasterVolume;
+            }
             if(musicSlider != null)
             {
                 musicSlider.onValueChanged.AddListener(SetMusicVolume);
@@ -167,12 +178,28 @@ namespace Pospec.EnviromentSettings
 
         private void OnValidate()
         {
+            if(masterSlider != null)
+            {
+                masterSlider.minValue = 0.0001f;
+                masterSlider.maxValue = 1;
+                masterSlider.wholeNumbers = false;
+                masterSlider.interactable = true;
+                if (audioMixer == null)
+                    Debug.LogWarning("No mixer", this);
+                else
+                    audioMixer.GetFloat(masterVolumeName, out _);
+            }
+
             if(musicSlider != null)
             {
                 musicSlider.minValue = 0.0001f;
                 musicSlider.maxValue = 1;
                 musicSlider.wholeNumbers = false;
                 musicSlider.interactable = true;
+                if (audioMixer == null)
+                    Debug.LogWarning("No mixer", this);
+                else
+                    audioMixer.GetFloat(musicVolumeName, out _);
             }
 
             if (soundSlider != null)
@@ -181,6 +208,10 @@ namespace Pospec.EnviromentSettings
                 soundSlider.maxValue = 1;
                 soundSlider.wholeNumbers = false;
                 soundSlider.interactable = true;
+                if (audioMixer == null)
+                    Debug.LogWarning("No mixer", this);
+                else
+                    audioMixer.GetFloat(soundVolumeName, out _);
             }
 
             if (resolutionsDropdown != null)
@@ -258,9 +289,18 @@ namespace Pospec.EnviromentSettings
 
         #region Audio
 
+        public void SetMasterVolume(float volume)
+        {
+            audioMixer?.SetFloat(masterVolumeName, SliderToMixer(volume));
+            Data.MasterVolume = volume;
+            onMasterChanged?.Invoke(volume);
+            ValueChanged();
+        }
+
+
         public void SetMusicVolume(float volume)
         {
-            musicMixer?.SetFloat("Volume", SliderToMixer(volume));
+            audioMixer?.SetFloat(musicVolumeName, SliderToMixer(volume));
             Data.MusicVolume = volume;
             onMusicChanged?.Invoke(volume);
             ValueChanged();
@@ -268,7 +308,7 @@ namespace Pospec.EnviromentSettings
 
         public void SetSoundVolume(float volume)
         {
-            soundMixer?.SetFloat("Volume", SliderToMixer(volume));
+            audioMixer?.SetFloat(soundVolumeName, SliderToMixer(volume));
             Data.SoundVolume = volume;
             onSoundChanged?.Invoke(volume);
             ValueChanged();
@@ -287,10 +327,10 @@ namespace Pospec.EnviromentSettings
 
         private void SetResolution(int detailLevel)
         {
-            if (resolutionsDropdown == null || Resolutions.Count == 0 || ignoreResolutionsDevices.Contains(SystemInfo.deviceType) || ignoreResolutionsPlatforms.Contains(Application.platform))
+            if (resolutionsDropdown == null || Resolutions.Count == 0 || ignoreResolutionsPlatforms.Contains(Application.platform))
                 return;
 
-            Debug.Log("changing resulution to " + detailLevel.ToString());
+            Debug.Log("changing resolution to " + detailLevel.ToString());
 
             Resolution current = GetResolution(detailLevel);
             Screen.SetResolution(current.width, current.height, Screen.fullScreen);
@@ -335,8 +375,6 @@ namespace Pospec.EnviromentSettings
 
         public static Resolution GetResolution(int detail)
         {
-            Debug.Log("getting resolution");
-
             if (Resolutions.Count == 0)
                 return Screen.currentResolution;
 

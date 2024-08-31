@@ -1,21 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Pospec.EnviromentSettings
+namespace Pospec.EnvironmentSettings
 {
     public class SettingsData
     {
+        public float MasterVolume;
         public float MusicVolume;
         public float SoundVolume;
         public DetailLevel ResolutionLevel;
         public bool FullScreen;
         public bool PostProcessing;
 
-        public SettingsData() : this(1, 1, DetailLevel.Max, Screen.fullScreen, true) { }
+        public SettingsData() : this(1, 1, 1, DetailLevel.Max, Screen.fullScreen, true) { }
 
-        public SettingsData(float musicVolume, float soundVolume, DetailLevel resolutionLevel, bool fullScreen, bool postProcessing)
+        public SettingsData(float masterVolume, float musicVolume, float soundVolume, DetailLevel resolutionLevel, bool fullScreen, bool postProcessing)
         {
+            MasterVolume = masterVolume;
             MusicVolume = musicVolume;
             SoundVolume = soundVolume;
             ResolutionLevel = resolutionLevel;
