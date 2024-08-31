@@ -22,6 +22,8 @@ namespace Pospec.EnviromentSettings
         [SerializeField] private Toggle fullScreenToggle;
         [SerializeField] private Toggle postProcToggle;
         [SerializeField] private Slider brightnessSlider;
+        [SerializeField] private List<DeviceType> ignoreResolutionsDevices;
+        [SerializeField] private List<RuntimePlatform> ignoreResolutionsPlatforms;
 
         public event Action<float> onMusicChanged;
         public event Action<float> onSoundChanged;
@@ -76,12 +78,19 @@ namespace Pospec.EnviromentSettings
 
         private void Start()
         {
-            SetupResolutionDropdown();
-            SetMusicVolume(Data.MusicVolume);
-            SetSoundVolume(Data.SoundVolume);
-            SetResolution(Data.ResolutionLevel);
-            SetFullScreen(Data.FullScreen);
-            SetPostProcessing(Data.PostProcessing);
+            try
+            {
+                SetMusicVolume(Data.MusicVolume);
+                SetSoundVolume(Data.SoundVolume);
+                SetPostProcessing(Data.PostProcessing);
+                SetFullScreen(Data.FullScreen);
+                SetupResolutionDropdown();
+                SetResolution(Data.ResolutionLevel);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error while applying settings: " + ex.Message);
+            }
 
             SetupUI();
         }
@@ -278,8 +287,10 @@ namespace Pospec.EnviromentSettings
 
         private void SetResolution(int detailLevel)
         {
-            if (Resolutions.Count == 0)
+            if (resolutionsDropdown == null || Resolutions.Count == 0 || ignoreResolutionsDevices.Contains(SystemInfo.deviceType) || ignoreResolutionsPlatforms.Contains(Application.platform))
                 return;
+
+            Debug.Log("changing resulution to " + detailLevel.ToString());
 
             Resolution current = GetResolution(detailLevel);
             Screen.SetResolution(current.width, current.height, Screen.fullScreen);
@@ -290,6 +301,8 @@ namespace Pospec.EnviromentSettings
 
         public void SetFullScreen(bool fullScreen)
         {
+            Debug.Log("changing fullscreen to " + fullScreen.ToString());
+
             Screen.fullScreen = fullScreen;
             Data.FullScreen = fullScreen;
             onFullScreenChanged?.Invoke(fullScreen);
@@ -298,6 +311,8 @@ namespace Pospec.EnviromentSettings
 
         public void SetPostProcessing(bool postProc)
         {
+            Debug.Log("changing postProc to " + postProc.ToString());
+
             Data.PostProcessing = postProc;
             onPostProcChanged?.Invoke(postProc);
             ValueChanged();
@@ -305,6 +320,8 @@ namespace Pospec.EnviromentSettings
 
         private void SetBrightness(float brightness)
         {
+            Debug.Log("changing brightness to " + brightness.ToString());
+
             brightness = Mathf.Clamp01(brightness);
             Screen.brightness = brightness;
             onBrightnessChanged?.Invoke(brightness);
@@ -318,6 +335,8 @@ namespace Pospec.EnviromentSettings
 
         public static Resolution GetResolution(int detail)
         {
+            Debug.Log("getting resolution");
+
             if (Resolutions.Count == 0)
                 return Screen.currentResolution;
 
