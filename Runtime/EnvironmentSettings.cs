@@ -21,8 +21,6 @@ namespace Pospec.EnvironmentSettings
         [Header("Screen")]
         [SerializeField] private TMP_Dropdown resolutionsDropdown;
         [SerializeField] private Toggle fullScreenToggle;
-        [SerializeField] private Toggle postProcToggle;
-        [SerializeField] private Slider brightnessSlider;
         [SerializeField] private List<RuntimePlatform> ignoreResolutionsPlatforms;
 
         public event Action<float> onMasterChanged;
@@ -30,8 +28,6 @@ namespace Pospec.EnvironmentSettings
         public event Action<float> onSoundChanged;
         public event Action<DetailLevel> onResolutionChanged;
         public event Action<bool> onFullScreenChanged;
-        public event Action<bool> onPostProcChanged;
-        public event Action<float> onBrightnessChanged;
         public event Action onChanged;
 
         private const string masterVolumeName = "MasterVolume";
@@ -45,7 +41,7 @@ namespace Pospec.EnvironmentSettings
         {
             get
             {
-                if(_data == null)
+                if (_data == null)
                     _data = LoadData();
                 return _data;
             }
@@ -88,7 +84,6 @@ namespace Pospec.EnvironmentSettings
                 SetMasterVolume(Data.MasterVolume);
                 SetMusicVolume(Data.MusicVolume);
                 SetSoundVolume(Data.SoundVolume);
-                SetPostProcessing(Data.PostProcessing);
                 SetFullScreen(Data.FullScreen);
                 SetupResolutionDropdown();
                 SetResolution(Data.ResolutionLevel);
@@ -131,7 +126,7 @@ namespace Pospec.EnvironmentSettings
                 string json = JsonUtility.ToJson(data);
                 File.WriteAllText(savePath, json);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogError("Error while saving settings data: " + ex.Message);
             }
@@ -139,46 +134,36 @@ namespace Pospec.EnvironmentSettings
 
         private void SetupUI()
         {
-            if(masterSlider != null)
+            if (masterSlider != null)
             {
                 masterSlider.onValueChanged.AddListener(SetMasterVolume);
                 masterSlider.value = Data.MasterVolume;
             }
-            if(musicSlider != null)
+            if (musicSlider != null)
             {
                 musicSlider.onValueChanged.AddListener(SetMusicVolume);
                 musicSlider.value = Data.MusicVolume;
             }
-            if(soundSlider != null)
+            if (soundSlider != null)
             {
                 soundSlider.onValueChanged.AddListener(SetSoundVolume);
                 soundSlider.value = Data.SoundVolume;
             }
-            if(resolutionsDropdown != null)
+            if (resolutionsDropdown != null)
             {
                 resolutionsDropdown.onValueChanged.AddListener(SetResolution);
                 resolutionsDropdown.value = (int)Data.ResolutionLevel;
             }
-            if(fullScreenToggle != null)
+            if (fullScreenToggle != null)
             {
                 fullScreenToggle.onValueChanged.AddListener(SetFullScreen);
                 fullScreenToggle.isOn = Data.FullScreen;
-            }
-            if(postProcToggle != null)
-            {
-                postProcToggle.onValueChanged.AddListener(SetPostProcessing);
-                postProcToggle.isOn = Data.PostProcessing;
-            }
-            if(brightnessSlider != null)
-            {
-                brightnessSlider.onValueChanged.AddListener(SetBrightness);
-                brightnessSlider.value = Screen.brightness;
             }
         }
 
         private void OnValidate()
         {
-            if(masterSlider != null)
+            if (masterSlider != null)
             {
                 masterSlider.minValue = 0.0001f;
                 masterSlider.maxValue = 1;
@@ -190,7 +175,7 @@ namespace Pospec.EnvironmentSettings
                     audioMixer.GetFloat(masterVolumeName, out _);
             }
 
-            if(musicSlider != null)
+            if (musicSlider != null)
             {
                 musicSlider.minValue = 0.0001f;
                 musicSlider.maxValue = 1;
@@ -220,17 +205,9 @@ namespace Pospec.EnvironmentSettings
                 resolutionsDropdown.interactable = true;
             }
 
-            if(fullScreenToggle != null)
+            if (fullScreenToggle != null)
             {
                 fullScreenToggle.interactable = true;
-            }
-
-            if (brightnessSlider != null)
-            {
-                brightnessSlider.minValue = 0;
-                brightnessSlider.maxValue = 1;
-                brightnessSlider.wholeNumbers = false;
-                brightnessSlider.interactable = true;
             }
         }
 
@@ -274,14 +251,6 @@ namespace Pospec.EnvironmentSettings
             if (fullScreenToggle != null)
             {
                 fullScreenToggle.onValueChanged.RemoveListener(SetFullScreen);
-            }
-            if(postProcToggle != null)
-            {
-                postProcToggle.onValueChanged.RemoveListener(SetPostProcessing);
-            }
-            if (brightnessSlider != null)
-            {
-                brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
             }
         }
 
@@ -346,25 +315,6 @@ namespace Pospec.EnvironmentSettings
             Screen.fullScreen = fullScreen;
             Data.FullScreen = fullScreen;
             onFullScreenChanged?.Invoke(fullScreen);
-            ValueChanged();
-        }
-
-        public void SetPostProcessing(bool postProc)
-        {
-            Debug.Log("changing postProc to " + postProc.ToString());
-
-            Data.PostProcessing = postProc;
-            onPostProcChanged?.Invoke(postProc);
-            ValueChanged();
-        }
-
-        private void SetBrightness(float brightness)
-        {
-            Debug.Log("changing brightness to " + brightness.ToString());
-
-            brightness = Mathf.Clamp01(brightness);
-            Screen.brightness = brightness;
-            onBrightnessChanged?.Invoke(brightness);
             ValueChanged();
         }
 
